@@ -21,15 +21,15 @@ import (
 )
 
 type fileServer struct {
-	data       []byte
-	perConn    int           // bytes per second per connection (0 = unlimited)
-	noRange    bool          // behave like a server without range support
-	dropEvery  int64         // cut a connection after this many bytes (0 = never)
-	forbid     atomic.Bool   // answer 403 (expired link)
-	requests   atomic.Int64
-	maxActive  atomic.Int64
-	active     atomic.Int64
-	name       string
+	data      []byte
+	perConn   int         // bytes per second per connection (0 = unlimited)
+	noRange   bool        // behave like a server without range support
+	dropEvery int64       // cut a connection after this many bytes (0 = never)
+	forbid    atomic.Bool // answer 403 (expired link)
+	requests  atomic.Int64
+	maxActive atomic.Int64
+	active    atomic.Int64
+	name      string
 }
 
 func (fs *fileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +105,7 @@ type recorder struct {
 	completed chan Download
 }
 
-func newRecorder() *recorder { return &recorder{completed: make(chan Download, 16)} }
+func newRecorder() *recorder             { return &recorder{completed: make(chan Download, 16)} }
 func (r *recorder) Changed(Download)     {}
 func (r *recorder) Removed(string)       {}
 func (r *recorder) Completed(d Download) { r.completed <- d }
@@ -343,7 +343,7 @@ func TestFilenameHelpers(t *testing.T) {
 	cases := map[string]string{
 		`attachment; filename="report.pdf"`:                  "report.pdf",
 		`attachment; filename*=UTF-8''na%C3%AFve%20file.txt`: "naïve file.txt",
-		`inline; filename=plain.zip`:                          "plain.zip",
+		`inline; filename=plain.zip`:                         "plain.zip",
 	}
 	for h, want := range cases {
 		if got := FilenameFromDisposition(h); got != want {

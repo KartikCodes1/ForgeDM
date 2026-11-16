@@ -31,10 +31,10 @@ var (
 )
 
 const (
-	fsctlSetSparse     = 0x000900C4
-	esContinuous       = 0x80000000
-	esSystemRequired   = 0x00000001
-	createNoWindow     = 0x08000000
+	fsctlSetSparse   = 0x000900C4
+	esContinuous     = 0x80000000
+	esSystemRequired = 0x00000001
+	createNoWindow   = 0x08000000
 )
 
 // HideWindow configures cmd to run without flashing a console window.

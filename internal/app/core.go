@@ -449,3 +449,20 @@ func (c *Core) httpClient() *http.Client {
 	proxy := platform.ProxyFunc(st.Settings.ProxyMode, st.Settings.ProxyURL)
 	return &http.Client{Timeout: 45 * time.Second, Transport: &http.Transport{Proxy: proxy, MaxIdleConnsPerHost: 8}}
 }
+
+// CloseToTray reports whether closing the window should keep ForgeDM running.
+func (c *Core) CloseToTray() bool { return c.cfg.Get().Settings.CloseToTray }
+
+// TrayInfo is shown in the tray tooltip.
+type TrayInfo struct {
+	Speed  string
+	Active int
+}
+
+// TrayStatus summarizes activity for the tray icon.
+func (c *Core) TrayStatus() TrayInfo {
+	c.mu.Lock()
+	speed := c.speed
+	c.mu.Unlock()
+	return TrayInfo{Speed: humanBytes(int64(speed)) + "/s", Active: len(c.eng.Live(""))}
+}

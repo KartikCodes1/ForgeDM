@@ -144,12 +144,12 @@ func (c *Core) add(o AddOptions) (engine.Download, error) {
 type apiHooks struct{ c *Core }
 
 type pendingCapture struct {
-	ID      string         `json:"id"`
-	Capture api.Capture    `json:"capture"`
-	Browser string         `json:"browser"`
-	Probe   *ProbeView     `json:"probe,omitempty"`
-	Options AddOptions     `json:"options"`
-	At      time.Time      `json:"at"`
+	ID      string      `json:"id"`
+	Capture api.Capture `json:"capture"`
+	Browser string      `json:"browser"`
+	Probe   *ProbeView  `json:"probe,omitempty"`
+	Options AddOptions  `json:"options"`
+	At      time.Time   `json:"at"`
 }
 
 func (h apiHooks) Capture(cp api.Capture, browser string) (string, error) {

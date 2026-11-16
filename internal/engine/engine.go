@@ -22,10 +22,10 @@ import (
 
 // Config tunes the engine. It can be changed at runtime with SetConfig.
 type Config struct {
-	MaxActive     int           // downloads the main queue runs at once
-	DefaultConns  int           // 0 = automatic by file size
-	MaxConns      int           // hard cap per download
-	UserAgent     string        // used when the browser didn't send one
+	MaxActive     int    // downloads the main queue runs at once
+	DefaultConns  int    // 0 = automatic by file size
+	MaxConns      int    // hard cap per download
+	UserAgent     string // used when the browser didn't send one
 	Proxy         func(*http.Request) (*url.URL, error)
 	RetryCount    int           // retries per connection before giving up
 	RetryDelay    time.Duration // base delay, doubled per attempt
@@ -1028,6 +1028,12 @@ func (e *Engine) Live(withHistory string) []Live {
 		l.Map = progressMap(d, 32)
 		if withHistory == d.ID {
 			l.History = append([]float64(nil), rs.history...)
+			for _, sg := range d.Segments {
+				if len(l.Parts) >= 64 {
+					break
+				}
+				l.Parts = append(l.Parts, PartView{Start: sg.Start, End: sg.End, Done: sg.Done, Active: sg.active})
+			}
 		}
 		t.mu.Unlock()
 		out = append(out, l)

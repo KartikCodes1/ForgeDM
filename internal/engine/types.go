@@ -73,14 +73,14 @@ type PostActions struct {
 
 // HLSPart is one media segment of an HLS playlist.
 type HLSPart struct {
-	URL      string  `json:"url"`
-	Duration float64 `json:"dur"`
-	KeyURL   string  `json:"key,omitempty"`
-	KeyIV    string  `json:"iv,omitempty"`
-	Seq      int64   `json:"seq"`
-	Size     int64   `json:"size"`
-	Done     bool    `json:"done"`
-	ByteRange string `json:"range,omitempty"`
+	URL       string  `json:"url"`
+	Duration  float64 `json:"dur"`
+	KeyURL    string  `json:"key,omitempty"`
+	KeyIV     string  `json:"iv,omitempty"`
+	Seq       int64   `json:"seq"`
+	Size      int64   `json:"size"`
+	Done      bool    `json:"done"`
+	ByteRange string  `json:"range,omitempty"`
 }
 
 // HLSState tracks an HLS download.
@@ -139,16 +139,25 @@ func (d *Download) TempPath() string { return d.Path() + ".forgedm" }
 
 // Live is the runtime view of a download, sent to the UI several times a second.
 type Live struct {
-	ID         string    `json:"id"`
-	Status     Status    `json:"status"`
-	Downloaded int64     `json:"downloaded"`
-	Size       int64     `json:"size"`
-	Speed      float64   `json:"speed"`
-	ETA        float64   `json:"eta"`
-	Conns      int       `json:"conns"`
-	Map        []float64 `json:"map"`
-	PeakSpeed  float64   `json:"peak"`
-	History    []float64 `json:"history,omitempty"`
+	ID         string     `json:"id"`
+	Status     Status     `json:"status"`
+	Downloaded int64      `json:"downloaded"`
+	Size       int64      `json:"size"`
+	Speed      float64    `json:"speed"`
+	ETA        float64    `json:"eta"`
+	Conns      int        `json:"conns"`
+	Map        []float64  `json:"map"`
+	PeakSpeed  float64    `json:"peak"`
+	History    []float64  `json:"history,omitempty"`
+	Parts      []PartView `json:"parts,omitempty"`
+}
+
+// PartView describes one piece of the file for the progress window.
+type PartView struct {
+	Start  int64 `json:"start"`
+	End    int64 `json:"end"`
+	Done   int64 `json:"done"`
+	Active bool  `json:"active"`
 }
 
 // Snapshot returns a deep-enough copy safe to hand to other goroutines.
@@ -197,15 +206,15 @@ type Request struct {
 
 // ProbeResult is what the server tells us about a URL before downloading.
 type ProbeResult struct {
-	URL         string `json:"url"`
-	FinalURL    string `json:"finalUrl"`
-	Filename    string `json:"filename"`
-	Size        int64  `json:"size"`
-	Resumable   bool   `json:"resumable"`
-	ContentType string `json:"contentType"`
-	Kind        Kind   `json:"kind"`
-	ETag        string `json:"etag,omitempty"`
-	LastMod     string `json:"lastModified,omitempty"`
+	URL         string       `json:"url"`
+	FinalURL    string       `json:"finalUrl"`
+	Filename    string       `json:"filename"`
+	Size        int64        `json:"size"`
+	Resumable   bool         `json:"resumable"`
+	ContentType string       `json:"contentType"`
+	Kind        Kind         `json:"kind"`
+	ETag        string       `json:"etag,omitempty"`
+	LastMod     string       `json:"lastModified,omitempty"`
 	Variants    []HLSVariant `json:"variants,omitempty"`
 }
 

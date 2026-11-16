@@ -40,7 +40,9 @@ func OpenPath(p string) error {
 func ShowInFolder(p string) error { return OpenPath(filepath.Dir(p)) }
 
 // Scan runs an antivirus scan (only available on Windows).
-func Scan(p string) ScanResult { return ScanResult{Clean: true, Note: "No antivirus scanner available", Available: false} }
+func Scan(p string) ScanResult {
+	return ScanResult{Clean: true, Note: "No antivirus scanner available", Available: false}
+}
 
 // SetStartup registers ForgeDM to start with the system (Windows only).
 func SetStartup(enabled bool, exe string) error { return nil }

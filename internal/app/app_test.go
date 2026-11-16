@@ -36,14 +36,14 @@ func (f *fakeUI) Emit(ev string, data any) {
 	f.events[ev] = append(f.events[ev], data)
 	f.mu.Unlock()
 }
-func (f *fakeUI) Show()                         {}
-func (f *fakeUI) Hide()                         {}
-func (f *fakeUI) Notify(t, b string)            { f.mu.Lock(); f.notes = append(f.notes, t+": "+b); f.mu.Unlock() }
-func (f *fakeUI) ClipboardText() string         { f.mu.Lock(); defer f.mu.Unlock(); return f.clip }
+func (f *fakeUI) Show()                           {}
+func (f *fakeUI) Hide()                           {}
+func (f *fakeUI) Notify(t, b string)              { f.mu.Lock(); f.notes = append(f.notes, t+": "+b); f.mu.Unlock() }
+func (f *fakeUI) ClipboardText() string           { f.mu.Lock(); defer f.mu.Unlock(); return f.clip }
 func (f *fakeUI) ChooseFolder(_, _ string) string { return "" }
-func (f *fakeUI) OpenFile(_, _ string) string   { return "" }
-func (f *fakeUI) SaveFile(_, _ string) string   { return "" }
-func (f *fakeUI) Quit()                         {}
+func (f *fakeUI) OpenFile(_, _ string) string     { return "" }
+func (f *fakeUI) SaveFile(_, _ string) string     { return "" }
+func (f *fakeUI) Quit()                           {}
 
 func (f *fakeUI) count(ev string) int {
 	f.mu.Lock()
@@ -234,7 +234,7 @@ func TestClipboardDetection(t *testing.T) {
 
 func TestScheduleWindows(t *testing.T) {
 	loc := time.Local
-	mon := time.Date(2026, 11, 16, 2, 0, 0, 0, loc) // a Monday
+	mon := time.Date(2026, 11, 16, 2, 0, 0, 0, loc)                                                  // a Monday
 	night := config.Queue{ID: "night", Enabled: true, Start: "23:00", Stop: "06:00", Days: []int{0}} // Sundays
 	if !inWindow(night, mon, "") {
 		t.Error("overnight window from Sunday should still be open at 02:00 Monday")
