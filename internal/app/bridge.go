@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -490,16 +491,37 @@ func (a *App) DismissClipboard(link string) {
 	a.c.mu.Unlock()
 }
 
-// ExtensionFolder returns where the browser extension files are.
+// ExtensionFolder unpacks the browser extension that ships inside ForgeDM
+// and returns the folder holding its chrome/ and firefox/ versions.
 func (a *App) ExtensionFolder() string {
-	if a.c.exe == "" {
-		return ""
+	if a.c.extFS != nil {
+		dir := filepath.Join(filepath.Dir(a.c.cfg.Path()), "extension")
+		_ = os.RemoveAll(dir)
+		err := fs.WalkDir(a.c.extFS, ".", func(p string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			target := filepath.Join(dir, filepath.FromSlash(p))
+			if d.IsDir() {
+				return os.MkdirAll(target, 0o755)
+			}
+			b, err := fs.ReadFile(a.c.extFS, p)
+			if err != nil {
+				return err
+			}
+			return os.WriteFile(target, b, 0o644)
+		})
+		if err == nil {
+			return dir
+		}
 	}
-	dir := filepath.Join(filepath.Dir(a.c.exe), "extension")
-	if _, err := os.Stat(dir); err != nil {
-		return ""
+	if a.c.exe != "" {
+		dir := filepath.Join(filepath.Dir(a.c.exe), "extension")
+		if _, err := os.Stat(dir); err == nil {
+			return dir
+		}
 	}
-	return dir
+	return ""
 }
 
 // ---- Site Grabber ----

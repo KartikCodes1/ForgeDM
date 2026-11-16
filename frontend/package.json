@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:app": "npm run build && node ../extension/build.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",

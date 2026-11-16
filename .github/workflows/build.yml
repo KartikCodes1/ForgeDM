@@ -1,0 +1,72 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Go tests
+        run: go test -race ./internal/...
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Type-check and build the UI
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+  windows:
+    name: Windows app
+    runs-on: windows-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.17.1
+      - name: Install NSIS
+        run: |
+          if (-not (Get-Command makensis -ErrorAction SilentlyContinue)) { choco install nsis -y --no-progress }
+        shell: pwsh
+      - name: Build ForgeDM.exe and installer
+        run: wails build -platform windows/amd64 -nsis -trimpath -ldflags "-s -w" -skipbindings
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          Copy-Item build/bin/ForgeDM.exe release/ForgeDM.exe
+          Get-ChildItem build/bin -Filter "*installer*.exe" | ForEach-Object { Copy-Item $_.FullName "release/ForgeDM-Setup.exe" }
+          Compress-Archive -Path build/bin/ForgeDM.exe -DestinationPath release/ForgeDM-portable.zip -Force
+          Compress-Archive -Path extension/dist/chrome/* -DestinationPath release/ForgeDM-extension-chrome.zip -Force
+          Compress-Archive -Path extension/dist/firefox/* -DestinationPath release/ForgeDM-extension-firefox.zip -Force
+          Get-ChildItem release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ForgeDM-windows
+          path: release/*
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true

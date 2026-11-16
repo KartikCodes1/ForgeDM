@@ -247,7 +247,7 @@ export function ConnectDialog({ onClose }: { onClose: () => void }) {
   const steps = [
     { t: "Open the extensions page", d: "In Chrome go to chrome://extensions, in Edge go to edge://extensions, in Brave go to brave://extensions." },
     { t: "Turn on Developer mode", d: "It's a switch at the top right (Chrome, Brave) or at the left (Edge)." },
-    { t: "Load the ForgeDM extension", d: "Click \"Load unpacked\" and choose the extension folder that came with ForgeDM (\"extension\\chrome\" next to ForgeDM.exe)." },
+    { t: "Load the ForgeDM extension", d: "Click \"Load unpacked\" and choose the \"chrome\" folder inside the folder ForgeDM opens for you below." },
     { t: "Connect", d: "Click the ForgeDM icon in the browser toolbar, then Connect. Approve it in the window ForgeDM shows." },
   ];
   return (
@@ -267,10 +267,10 @@ export function ConnectDialog({ onClose }: { onClose: () => void }) {
       </ol>
       <div className="notice info" style={{ fontSize: 13 }}>
         <Icon name="info" size={16} />
-        <span className="grow">For Firefox, open about:debugging → This Firefox → Load Temporary Add-on, and pick manifest.json in the "extension\firefox" folder.</span>
+        <span className="grow">For Firefox, open about:debugging → This Firefox → Load Temporary Add-on, and pick manifest.json in the "firefox" folder.</span>
       </div>
       <div className="actions">
-        {folder && <button className="btn" onClick={() => api.openFolder(folder)}><Icon name="folder" size={16} />Open extension folder</button>}
+        <button className="btn" disabled={!folder} onClick={() => api.openFolder(folder)}><Icon name="folder" size={16} />Open extension folder</button>
         <div style={{ flex: 1 }} />
         <button className="btn primary" onClick={onClose}>Done</button>
       </div>

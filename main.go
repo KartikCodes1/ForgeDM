@@ -5,6 +5,7 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,6 +25,9 @@ var assets embed.FS
 
 //go:embed build/windows/icon.ico
 var trayIcon []byte
+
+//go:embed all:extension/dist
+var extensionFiles embed.FS
 
 func hasArg(name string) bool {
 	for _, a := range os.Args[1:] {
@@ -50,7 +54,8 @@ func main() {
 	}
 	minimized := hasArg("--minimized")
 	ui := &wailsUI{}
-	core, err := app.NewCore(ui, app.Options{StartHidden: minimized})
+	extFS, _ := fs.Sub(extensionFiles, "extension/dist")
+	core, err := app.NewCore(ui, app.Options{StartHidden: minimized, ExtensionFS: extFS})
 	if err != nil {
 		fail(err)
 		return

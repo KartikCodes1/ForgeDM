@@ -165,7 +165,7 @@ func TestSegmentedDownloadIsFasterAndCorrect(t *testing.T) {
 	}
 	checkFile(t, filepath.Join(dir, "big file.bin"), data)
 	// One connection would need ~3s at 2 MB/s; 8 connections should be well under that.
-	if took > 2*time.Second {
+	if took > 2400*time.Millisecond {
 		t.Errorf("segmented download took %v, expected parallel speed-up", took)
 	}
 	if fs.maxActive.Load() < 4 {

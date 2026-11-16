@@ -4,6 +4,7 @@ package app
 
 import (
 	"context"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -65,12 +66,15 @@ type Core struct {
 	lastSeenAt  map[string]time.Time
 	detailsID   string
 	startHidden bool
+	extFS       fs.FS
 }
 
 // Options configure NewCore.
 type Options struct {
 	DataDir     string
 	StartHidden bool
+	// ExtensionFS holds the built browser extension (chrome/ and firefox/).
+	ExtensionFS fs.FS
 }
 
 // NewCore loads settings and downloads. Call Startup once the UI exists.
@@ -100,6 +104,7 @@ func NewCore(ui UI, opts Options) (*Core, error) {
 		runs:        map[string]*queueRun{},
 		lastSeenAt:  map[string]time.Time{},
 		startHidden: opts.StartHidden,
+		extFS:       opts.ExtensionFS,
 	}
 	st := store.Get()
 	eng, err := engine.New(c.engineConfig(st.Settings), filepath.Join(dataDir, "downloads.json"), hooks{c})
