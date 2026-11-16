@@ -246,26 +246,35 @@ var (
 	meteredAt    time.Time
 	meteredValue bool
 
-	clsidNetworkListManager = windows.GUID{Data1: 0xDCB00C01, Data2: 0x570F, Data3: 0x4A9B, Data4: [8]byte{0x8D, 0x69, 0x19, 0x9F, 0xDB, 0xA5, 0x72, 0x3B}}
-	iidNetworkCostManager   = windows.GUID{Data1: 0xDCB00008, Data2: 0x570F, Data3: 0x4A9B, Data4: [8]byte{0x8D, 0x69, 0x19, 0x9F, 0xDB, 0xA5, 0x72, 0x3B}}
+	iidNetworkInformationStatics = windows.GUID{Data1: 0x5074f851, Data2: 0x950d, Data3: 0x4165, Data4: [8]byte{0x9c, 0x15, 0x36, 0x56, 0x19, 0x48, 0x1e, 0xea}}
 )
 
-// NLM_CONNECTION_COST flags that mean the user pays for data.
-const meteredCostFlags = 0x2 | 0x4 | 0x10000 | 0x40000 // fixed, variable, over data limit, roaming
-
-// ConnectionCost returns Windows' NLM_CONNECTION_COST flags for the
-// machine's internet connection.
+// ConnectionCost returns Windows' NetworkCostType for the internet
+// connection: 0 unknown or offline, 1 unrestricted, 2 fixed (data cap),
+// 3 variable (pay per use).
 func ConnectionCost() (uint32, error) {
-	var cost uint32
+	var costType uint32
 	err := inMTA(func() error {
-		m, err := coCreate(&clsidNetworkListManager, &iidNetworkCostManager)
+		f, err := activationFactory("Windows.Networking.Connectivity.NetworkInformation", &iidNetworkInformationStatics)
 		if err != nil {
 			return err
 		}
-		defer m.release()
-		return m.call(3, uintptr(unsafe.Pointer(&cost)), 0) // INetworkCostManager::GetCost
+		defer f.release()
+		var p unsafe.Pointer
+		if err := f.call(7, uintptr(unsafe.Pointer(&p))); err != nil || p == nil { // GetInternetConnectionProfile
+			return err // no profile means offline: not metered
+		}
+		profile := com{p}
+		defer profile.release()
+		var c unsafe.Pointer
+		if err := profile.call(9, uintptr(unsafe.Pointer(&c))); err != nil || c == nil { // GetConnectionCost
+			return err
+		}
+		cost := com{c}
+		defer cost.release()
+		return cost.call(6, uintptr(unsafe.Pointer(&costType))) // NetworkCostType
 	})
-	return cost, err
+	return costType, err
 }
 
 // IsMetered asks Windows whether the active connection is metered.
@@ -277,7 +286,7 @@ func IsMetered() bool {
 	}
 	cost, err := ConnectionCost()
 	meteredAt = time.Now()
-	meteredValue = err == nil && cost&meteredCostFlags != 0
+	meteredValue = err == nil && (cost == 2 || cost == 3)
 	return meteredValue
 }
 

@@ -24,8 +24,6 @@ var (
 	procRoGetActivationFactory = combase.NewProc("RoGetActivationFactory")
 	procWindowsCreateString    = combase.NewProc("WindowsCreateString")
 	procWindowsDeleteString    = combase.NewProc("WindowsDeleteString")
-	ole32                      = windows.NewLazySystemDLL("ole32.dll")
-	procCoCreateInstance       = ole32.NewProc("CoCreateInstance")
 )
 
 // IAsyncInfo, from windows.foundation.idl.
@@ -145,15 +143,4 @@ func await(op com, timeout time.Duration) error {
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-}
-
-// coCreate creates a classic COM object.
-func coCreate(clsid, iid *windows.GUID) (com, error) {
-	var p unsafe.Pointer
-	r, _, _ := procCoCreateInstance.Call(uintptr(unsafe.Pointer(clsid)), 0, 0x17, // CLSCTX_ALL
-		uintptr(unsafe.Pointer(iid)), uintptr(unsafe.Pointer(&p)))
-	if err := hresult(r); err != nil {
-		return com{}, err
-	}
-	return com{p}, nil
 }

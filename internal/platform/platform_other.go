@@ -99,6 +99,6 @@ func LaunchedAtStartup() bool { return false }
 // StartupDiagnostics exercises the startup task (Windows only).
 func StartupDiagnostics() map[string]any { return map[string]any{"supported": false} }
 
-// ConnectionCost returns Windows' cost flags for the internet connection
-// (Windows only).
+// ConnectionCost returns Windows' NetworkCostType for the internet
+// connection (Windows only).
 func ConnectionCost() (uint32, error) { return 0, nil }

@@ -32,7 +32,7 @@ func TestConnectionCost(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ConnectionCost: %v", err)
 	}
-	t.Logf("connection cost flags: 0x%x, metered: %v", cost, IsMetered())
+	t.Logf("network cost type: %d, metered: %v", cost, IsMetered())
 }
 
 func TestStartupTaskNeedsPackage(t *testing.T) {
