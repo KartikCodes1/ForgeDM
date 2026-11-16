@@ -290,3 +290,23 @@ func scheduleWake(t time.Time) Wake {
 	}
 	return &winWake{h: h}
 }
+
+// DiskSpace returns free and total bytes for the drive holding path.
+func DiskSpace(path string) (free, total uint64) {
+	p := path
+	for p != "" {
+		if _, err := os.Stat(p); err == nil {
+			break
+		}
+		parent := filepath.Dir(p)
+		if parent == p {
+			break
+		}
+		p = parent
+	}
+	var avail, tot, totFree uint64
+	if err := windows.GetDiskFreeSpaceEx(windows.StringToUTF16Ptr(p), &avail, &tot, &totFree); err != nil {
+		return 0, 0
+	}
+	return avail, tot
+}

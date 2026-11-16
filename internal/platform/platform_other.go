@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"syscall"
 	"time"
 )
 
@@ -59,3 +60,17 @@ func scheduleWake(t time.Time) Wake { return noWake{} }
 
 // HideWindow configures cmd to run without flashing a console window.
 func HideWindow(cmd *exec.Cmd) {}
+
+// DiskSpace returns free and total bytes for the drive holding path.
+func DiskSpace(path string) (free, total uint64) {
+	var st syscall.Statfs_t
+	for p := path; p != "" && p != filepath.Dir(p); p = filepath.Dir(p) {
+		if syscall.Statfs(p, &st) == nil {
+			return st.Bavail * uint64(st.Bsize), st.Blocks * uint64(st.Bsize)
+		}
+	}
+	if syscall.Statfs("/", &st) == nil {
+		return st.Bavail * uint64(st.Bsize), st.Blocks * uint64(st.Bsize)
+	}
+	return 0, 0
+}
