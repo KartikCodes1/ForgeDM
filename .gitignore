@@ -25,3 +25,4 @@ Thumbs.db
 # Runtime data written during development
 *.forgedm
 *.forgedm.parts/
+/tools/e2e/e2e

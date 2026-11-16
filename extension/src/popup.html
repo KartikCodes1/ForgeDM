@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ForgeDM</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<header>
+  <img src="icons/icon32.png" width="22" height="22" alt="">
+  <strong>ForgeDM</strong>
+  <span id="state" class="state">Checking…</span>
+</header>
+
+<section id="offline" hidden>
+  <p>ForgeDM isn't running. Open the ForgeDM app, then come back here.</p>
+</section>
+
+<section id="unpaired" hidden>
+  <p>Connect this browser so clicking download links sends them to ForgeDM.</p>
+  <button id="connect" class="primary">Connect</button>
+  <p id="pairmsg" class="hint"></p>
+</section>
+
+<section id="paired" hidden>
+  <div class="speed"><span id="speed">0</span><small id="unit">MB/s</small></div>
+  <p id="summary" class="hint"></p>
+  <ul id="items"></ul>
+  <div id="media" hidden>
+    <h2>Videos on this page</h2>
+    <ul id="mediaList"></ul>
+  </div>
+  <label class="row">
+    <span>Catch downloads in this browser</span>
+    <input type="checkbox" id="catch" role="switch">
+  </label>
+  <button id="open">Open ForgeDM</button>
+</section>
+<script src="popup.js"></script>
+</body>
+</html>
