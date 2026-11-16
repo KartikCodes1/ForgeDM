@@ -90,6 +90,10 @@ func NewCore(ui UI, opts Options) (*Core, error) {
 	if err != nil {
 		return nil, err
 	}
+	if on, ok := platform.TakeInstallerStartup(); ok {
+		// Apply the installer's "Start ForgeDM when Windows starts" choice.
+		_, _ = store.Update(func(st *config.State) { st.Settings.StartWithSystem = on })
+	}
 	exe, _ := os.Executable()
 	c := &Core{
 		ui:          ui,

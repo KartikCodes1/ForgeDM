@@ -7,6 +7,8 @@ frontend/node_modules/
 node_modules/
 
 # Wails generated
+build/windows/installer/wails_tools.nsh
+build/windows/installer/tmp/
 frontend/wailsjs/
 frontend/package.json.md5
 

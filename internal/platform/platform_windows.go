@@ -310,3 +310,20 @@ func DiskSpace(path string) (free, total uint64) {
 	}
 	return avail, tot
 }
+
+// TakeInstallerStartup returns the "Start ForgeDM when Windows starts"
+// choice the installer left under HKCU\Software\ForgeDM, then clears it so it
+// applies once; after that, ForgeDM's own setting is the source of truth.
+func TakeInstallerStartup() (on, ok bool) {
+	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\ForgeDM`, registry.QUERY_VALUE|registry.SET_VALUE)
+	if err != nil {
+		return false, false
+	}
+	defer k.Close()
+	v, _, err := k.GetIntegerValue("StartWithWindows")
+	if err != nil {
+		return false, false
+	}
+	_ = k.DeleteValue("StartWithWindows")
+	return v == 1, true
+}

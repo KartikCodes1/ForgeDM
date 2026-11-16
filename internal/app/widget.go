@@ -122,3 +122,11 @@ func (w *Widget) Drop(text string) (int, error) {
 
 // OpenMain brings the main window to the front.
 func (w *Widget) OpenMain() error { return w.do(http.MethodPost, "/v1/show", map[string]any{}, nil) }
+
+// QuitRunning asks a running ForgeDM to save and close. It returns an error
+// if no copy is running. The installer uses it through `ForgeDM.exe --quit`.
+func QuitRunning() error {
+	w := &Widget{client: &http.Client{Timeout: 3 * time.Second}}
+	w.load()
+	return w.do(http.MethodPost, "/v1/quit", map[string]any{}, nil)
+}

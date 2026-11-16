@@ -27,6 +27,7 @@ type fakeUI struct {
 	events map[string][]any
 	clip   string
 	notes  []string
+	quits  int
 }
 
 func newFakeUI() *fakeUI { return &fakeUI{events: map[string][]any{}} }
@@ -43,7 +44,7 @@ func (f *fakeUI) ClipboardText() string           { f.mu.Lock(); defer f.mu.Unlo
 func (f *fakeUI) ChooseFolder(_, _ string) string { return "" }
 func (f *fakeUI) OpenFile(_, _ string) string     { return "" }
 func (f *fakeUI) SaveFile(_, _ string) string     { return "" }
-func (f *fakeUI) Quit()                           {}
+func (f *fakeUI) Quit()                           { f.mu.Lock(); f.quits++; f.mu.Unlock() }
 
 func (f *fakeUI) count(ev string) int {
 	f.mu.Lock()
@@ -288,4 +289,46 @@ func TestSiteGrabberScan(t *testing.T) {
 	if got := filterItems(items, []string{"Images"}, "", 0); len(got) != 3 {
 		t.Errorf("filter images: %d", len(got))
 	}
+}
+
+func TestQuitIsLocalOnly(t *testing.T) {
+	c, _, ui, _ := newTestCore(t)
+	base := fmt.Sprintf("http://127.0.0.1:%d", c.api.Port)
+	quits := func() int { ui.mu.Lock(); defer ui.mu.Unlock(); return ui.quits }
+	post := func(token, origin string) int {
+		req, _ := http.NewRequest("POST", base+"/v1/quit", strings.NewReader("{}"))
+		if token != "" {
+			req.Header.Set("X-ForgeDM-Token", token)
+		}
+		if origin != "" {
+			req.Header.Set("Origin", origin)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	internal := c.cfg.Get().Settings.InternalToken
+	if internal == "" {
+		t.Fatal("no internal token")
+	}
+	if code := post("", ""); code != http.StatusUnauthorized {
+		t.Fatalf("no token: got %d", code)
+	}
+	if code := post("wrong", ""); code != http.StatusUnauthorized {
+		t.Fatalf("wrong token: got %d", code)
+	}
+	if code := post(internal, "chrome-extension://abcdef"); code != http.StatusForbidden {
+		t.Fatalf("extension origin: got %d", code)
+	}
+	time.Sleep(300 * time.Millisecond)
+	if quits() != 0 {
+		t.Fatal("quit without the internal token")
+	}
+	if code := post(internal, ""); code != http.StatusOK {
+		t.Fatalf("internal token: got %d", code)
+	}
+	waitFor(t, "quit", 3*time.Second, func() bool { return quits() == 1 })
 }

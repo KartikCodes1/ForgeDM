@@ -76,3 +76,7 @@ func DiskSpace(path string) (free, total uint64) {
 	}
 	return 0, 0
 }
+
+// TakeInstallerStartup returns the installer's start-with-the-system choice
+// (Windows only).
+func TakeInstallerStartup() (on, ok bool) { return false, false }

@@ -69,12 +69,23 @@ Manager, plus several extras.
 
 ## Install
 
-1. Download `ForgeDM-Setup.exe` (installer) or `ForgeDM-portable.zip` from the
+1. Download `ForgeDM-Setup-<version>.exe` from the
    [latest release](../../releases/latest), or the `ForgeDM-windows` artifact of
    the latest [build](../../actions).
-2. Run it. Windows 10 and 11 already include the WebView2 runtime ForgeDM needs.
-   Because the app isn't code-signed yet, Windows SmartScreen may warn you:
-   click **More info → Run anyway**.
+2. Run it and click through the setup. Because ForgeDM isn't code-signed yet,
+   Windows SmartScreen may warn you first: click **More info → Run anyway**.
+
+Setup installs ForgeDM for your Windows account in
+`%LOCALAPPDATA%\Programs\ForgeDM`, so it doesn't need administrator rights. It
+adds ForgeDM to the Start menu and to **Settings → Apps** (where you uninstall
+it), and lets you pick a desktop shortcut and starting with Windows. Running a
+newer setup updates ForgeDM in place and keeps your downloads and settings; if
+ForgeDM is open, setup asks it to save and close first. Windows 10 and 11
+already include the WebView2 runtime ForgeDM needs; if it's missing, setup
+installs it.
+
+Prefer no installer? `ForgeDM-portable.zip` has the same app as a single
+`ForgeDM.exe` you can run from anywhere.
 
 ### Connect your browser
 
@@ -101,7 +112,8 @@ wails build -platform windows/amd64 -trimpath -ldflags "-s -w"
 ```
 
 The app is in `build/bin/ForgeDM.exe`. Add `-nsis` (with NSIS installed) to
-also build an installer. You can build the Windows app from Linux or macOS
+also build the installer, `build/bin/ForgeDM-Setup-<version>.exe`; its script is
+`build/windows/installer/project.nsi`. You can build both from Linux or macOS
 too. Pushing a tag like `v1.0.0` makes GitHub Actions build and publish a release.
 
 Run the tests:

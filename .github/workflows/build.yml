@@ -50,12 +50,50 @@ jobs:
         shell: pwsh
       - name: Build ForgeDM.exe and installer
         run: wails build -platform windows/amd64 -nsis -trimpath -ldflags "-s -w" -skipbindings
+      - name: Test the installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $setup = (Get-ChildItem build/bin -Filter "ForgeDM-Setup-*.exe" | Select-Object -First 1).FullName
+          if (-not $setup) { throw "installer wasn't built" }
+          $dir = Join-Path $env:LOCALAPPDATA "Programs\ForgeDM"
+          $lnk = Join-Path ([Environment]::GetFolderPath("Programs")) "ForgeDM.lnk"
+          $uninstKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\ForgeDM"
+          $runKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+
+          Write-Host "Fresh install"
+          Start-Process $setup -ArgumentList "/S" -Wait
+          foreach ($f in "ForgeDM.exe", "uninstall.exe") { if (-not (Test-Path "$dir\$f")) { throw "$f not installed" } }
+          if (-not (Test-Path $lnk)) { throw "no Start menu shortcut" }
+          if ((Get-ItemProperty $uninstKey).DisplayName -ne "ForgeDM") { throw "not listed in Apps" }
+          if (-not (Get-ItemProperty $runKey).ForgeDM) { throw "no start-with-Windows entry" }
+
+          Write-Host "Update while ForgeDM is running"
+          $p = Start-Process "$dir\ForgeDM.exe" -ArgumentList "--minimized" -PassThru
+          $null = $p.Handle # keep the handle so ExitCode is readable later
+          Start-Sleep -Seconds 10
+          if ($p.HasExited) { throw "ForgeDM exited right after starting (code $($p.ExitCode))" }
+          Start-Process $setup -ArgumentList "/S" -Wait
+          if (-not $p.WaitForExit(5000)) { throw "setup didn't close the running ForgeDM" }
+          if ($p.ExitCode -ne 0) { throw "ForgeDM was forced closed (code $($p.ExitCode)) instead of quitting cleanly" }
+          if (-not (Test-Path "$env:APPDATA\ForgeDM\config.json")) { throw "settings weren't saved" }
+          if (-not (Test-Path "$dir\ForgeDM.exe")) { throw "update removed ForgeDM.exe" }
+
+          Write-Host "Uninstall"
+          Start-Process "$dir\uninstall.exe" -ArgumentList "/S" -Wait
+          for ($i = 0; $i -lt 30 -and (Test-Path "$dir\ForgeDM.exe"); $i++) { Start-Sleep -Seconds 1 }
+          if (Test-Path "$dir\ForgeDM.exe") { throw "ForgeDM.exe left behind" }
+          if (Test-Path $lnk) { throw "Start menu shortcut left behind" }
+          if (Test-Path $uninstKey) { throw "Apps entry left behind" }
+          if ((Get-ItemProperty $runKey -ErrorAction SilentlyContinue).ForgeDM) { throw "startup entry left behind" }
+          if (-not (Test-Path "$env:APPDATA\ForgeDM\config.json")) { throw "a silent uninstall shouldn't delete settings" }
+          Write-Host "Installer OK"
       - name: Package
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path release | Out-Null
           Copy-Item build/bin/ForgeDM.exe release/ForgeDM.exe
-          Get-ChildItem build/bin -Filter "*installer*.exe" | ForEach-Object { Copy-Item $_.FullName "release/ForgeDM-Setup.exe" }
+          Copy-Item build/bin/ForgeDM-Setup-*.exe release/
           Compress-Archive -Path build/bin/ForgeDM.exe -DestinationPath release/ForgeDM-portable.zip -Force
           Compress-Archive -Path extension/dist/chrome/* -DestinationPath release/ForgeDM-extension-chrome.zip -Force
           Compress-Archive -Path extension/dist/firefox/* -DestinationPath release/ForgeDM-extension-firefox.zip -Force

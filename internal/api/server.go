@@ -78,6 +78,9 @@ type Handler interface {
 	Pair(ctx context.Context, name string) (string, error)
 	Authorize(token string) (browser string, ok bool)
 	Show()
+	// Quit closes ForgeDM if token is the app's own internal token (used by
+	// the drop target and `ForgeDM.exe --quit`), never a browser's token.
+	Quit(token string) bool
 }
 
 // Server is the local API server.
@@ -101,6 +104,7 @@ func Start(h Handler, port int) (*Server, error) {
 	mux.HandleFunc("/v1/download", s.auth(s.download))
 	mux.HandleFunc("/v1/batch", s.auth(s.batch))
 	mux.HandleFunc("/v1/show", s.auth(s.show))
+	mux.HandleFunc("/v1/quit", s.quit)
 	var ln net.Listener
 	var err error
 	for p := port; p < port+10; p++ {
@@ -243,5 +247,19 @@ func (s *Server) batch(w http.ResponseWriter, r *http.Request, browser string) {
 
 func (s *Server) show(w http.ResponseWriter, r *http.Request, _ string) {
 	s.h.Show()
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+// quit closes ForgeDM cleanly. Only ForgeDM's own helpers may call it, so the
+// installer can close a running copy without losing download progress.
+func (s *Server) quit(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost || r.Header.Get("Origin") != "" {
+		writeJSON(w, http.StatusForbidden, map[string]any{"error": "forbidden"})
+		return
+	}
+	if !s.h.Quit(r.Header.Get("X-ForgeDM-Token")) {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "not allowed"})
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }

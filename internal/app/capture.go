@@ -368,6 +368,18 @@ func (h apiHooks) Authorize(token string) (string, bool) {
 
 func (h apiHooks) Show() { h.c.ui.Show() }
 
+func (h apiHooks) Quit(token string) bool {
+	if token == "" || token != h.c.cfg.Get().Settings.InternalToken {
+		return false
+	}
+	// Let the HTTP response go out before the app (and this server) shuts down.
+	go func() {
+		time.Sleep(150 * time.Millisecond)
+		h.c.ui.Quit()
+	}()
+	return true
+}
+
 // ---- clipboard ----
 
 func looksDownloadable(raw string, exts []string) (string, bool) {

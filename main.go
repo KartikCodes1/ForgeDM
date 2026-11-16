@@ -52,6 +52,13 @@ func main() {
 		runWidget()
 		return
 	}
+	if hasArg("--quit") {
+		// Used by the installer and uninstaller to close ForgeDM cleanly.
+		if app.QuitRunning() != nil {
+			os.Exit(1)
+		}
+		return
+	}
 	minimized := hasArg("--minimized")
 	ui := &wailsUI{}
 	extFS, _ := fs.Sub(extensionFiles, "extension/dist")
