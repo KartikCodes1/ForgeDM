@@ -57,6 +57,7 @@ func linkArg(args []string) string {
 }
 
 func main() {
+	platform.KeepMTA()
 	if hasArg("--widget") {
 		runWidget()
 		return

@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"sync"
 	"syscall"
 	"time"
 	"unsafe"
@@ -24,6 +25,9 @@ var (
 	procRoGetActivationFactory = combase.NewProc("RoGetActivationFactory")
 	procWindowsCreateString    = combase.NewProc("WindowsCreateString")
 	procWindowsDeleteString    = combase.NewProc("WindowsDeleteString")
+	procCoIncrementMTAUsage    = combase.NewProc("CoIncrementMTAUsage")
+
+	mtaOnce sync.Once
 )
 
 // IAsyncInfo, from windows.foundation.idl.
@@ -62,6 +66,17 @@ func (o com) query(iid *windows.GUID) (com, error) {
 	var p unsafe.Pointer
 	err := o.call(0, uintptr(unsafe.Pointer(iid)), uintptr(unsafe.Pointer(&p)))
 	return com{p}, err
+}
+
+// KeepMTA keeps a process-wide multithreaded COM apartment alive. Threads
+// that never initialized COM then join it implicitly, so background
+// goroutines (which hop between threads) can use Windows Runtime APIs such as
+// notifications. The UI thread is unaffected and stays single-threaded.
+func KeepMTA() {
+	mtaOnce.Do(func() {
+		var cookie uintptr
+		procCoIncrementMTAUsage.Call(uintptr(unsafe.Pointer(&cookie)))
+	})
 }
 
 // inMTA runs fn on a fresh OS thread initialized for the Windows Runtime.

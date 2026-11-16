@@ -137,7 +137,7 @@ jobs:
           if ($d.startup.readError -or $d.startup.enableError) { throw "startup task failed: $($d.startup | ConvertTo-Json -Compress)" }
           if ($d.startup.afterEnable -ne 2) { throw "turning on start-with-Windows didn't work" }
           if ($d.startup.afterDisable -ne 0) { throw "turning off start-with-Windows didn't work" }
-          if ($d.notificationError) { Write-Warning "Notification: $($d.notificationError)" }
+          if ($d.notificationError) { throw "notifications failed: $($d.notificationError)" }
 
           Write-Host "Run ForgeDM from the package"
           $app = Start-Process $alias -ArgumentList "--minimized" -PassThru

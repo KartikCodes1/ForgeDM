@@ -20,9 +20,14 @@ func usePackageNotifications() {
 	_ = toast.SetAppData(toast.AppData{AppID: aumid, ActivationExe: exe})
 }
 
-// testNotification shows a notification the way the packaged app does.
+// testNotification shows a notification the way the packaged app does: from
+// a background goroutine (the main thread is a UI apartment).
 func testNotification() error {
 	usePackageNotifications()
-	n := toast.Notification{AppID: platform.PackageAppID(), Title: "ForgeDM", Body: "Notifications are working."}
-	return n.Push()
+	done := make(chan error, 1)
+	go func() {
+		n := toast.Notification{AppID: platform.PackageAppID(), Title: "ForgeDM", Body: "Notifications are working."}
+		done <- n.Push()
+	}()
+	return <-done
 }

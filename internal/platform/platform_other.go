@@ -102,3 +102,6 @@ func StartupDiagnostics() map[string]any { return map[string]any{"supported": fa
 // ConnectionCost returns Windows' NetworkCostType for the internet
 // connection (Windows only).
 func ConnectionCost() (uint32, error) { return 0, nil }
+
+// KeepMTA keeps a multithreaded COM apartment alive (Windows only).
+func KeepMTA() {}
