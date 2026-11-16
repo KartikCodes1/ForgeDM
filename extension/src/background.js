@@ -13,6 +13,17 @@ const state = {
   media: new Map(), // tabId -> Map(url -> item)
 };
 
+// Sites whose terms don't allow downloading their videos (and which the Chrome
+// Web Store doesn't allow extensions to download from). No video detection there.
+const NO_VIDEO_HOSTS = /(^|\.)(youtube\.com|youtube-nocookie\.com|youtu\.be|googlevideo\.com|ytimg\.com)$/i;
+function noVideoSite(url) {
+  try {
+    return NO_VIDEO_HOSTS.test(new URL(url).hostname);
+  } catch (_) {
+    return false;
+  }
+}
+
 const BINARY_MIME = /^(application\/(octet-stream|zip|x-zip|x-7z|x-rar|vnd\.rar|x-msdownload|x-msi|x-iso9660|x-tar|gzip|x-gzip|pdf|vnd\.android|x-apple-diskimage|x-debian)|video\/|audio\/)/i;
 
 async function load() {
@@ -228,6 +239,7 @@ function mediaFor(tabId) {
 ext.webRequest.onHeadersReceived.addListener(
   (d) => {
     if (d.tabId < 0 || d.method !== "GET" || d.statusCode >= 400) return;
+    if (noVideoSite(d.url) || noVideoSite(d.initiator || d.documentUrl || d.originUrl || "")) return;
     const h = Object.fromEntries((d.responseHeaders || []).map((x) => [x.name.toLowerCase(), x.value || ""]));
     const ct = (h["content-type"] || "").toLowerCase();
     const url = d.url;

@@ -46,8 +46,10 @@
 
   // ---- video button ----
   let enabled = false;
+  // No video button on sites whose terms don't allow downloading their videos.
+  const noVideoSite = /(^|\.)(youtube\.com|youtube-nocookie\.com|youtu\.be)$/i.test(location.hostname);
   send({ type: "config" }).then((c) => {
-    enabled = !!c?.videoButton;
+    enabled = !!c?.videoButton && !noVideoSite;
     if (enabled) watchVideos();
   });
 
@@ -103,6 +105,14 @@
     }, 1200);
   }
 
+  // Replaces the menu's contents with a heading line.
+  function menuHead(text) {
+    const d = document.createElement("div");
+    d.className = "head";
+    d.textContent = text;
+    menu.replaceChildren(d);
+  }
+
   function closeMenu() {
     menu.style.display = "none";
     hideSoon();
@@ -114,7 +124,7 @@
     e.preventDefault();
     e.stopPropagation();
     if (menu.style.display === "block") return closeMenu();
-    menu.innerHTML = `<div class="head">Looking for videos…</div>`;
+    menuHead("Looking for videos…");
     menu.style.display = "block";
     let items = (await send({ type: "getMedia" })) || [];
     if (items.error) items = [];
@@ -122,11 +132,11 @@
     if (/^https?:/.test(src) && !items.some((i) => i.url === src)) items.push({ url: src, kind: "file", label: "Video", detail: "Playing now" });
     if (current?.mediaKeys) items = [{ kind: "protected", label: "Protected", detail: "This video is copy-protected", url: "" }];
     if (!items.length) {
-      menu.innerHTML = `<div class="head">No downloadable video found yet. Play the video for a moment and try again. Copy-protected videos can't be saved.</div>`;
+      menuHead("No downloadable video found yet. Play the video for a moment and try again. Copy-protected videos can't be saved.");
       return;
     }
     const usable = items.filter((i) => i.kind === "hls" || i.kind === "file");
-    menu.innerHTML = `<div class="head">${usable.length} stream${usable.length === 1 ? "" : "s"} found on this page</div>`;
+    menuHead(`${usable.length} stream${usable.length === 1 ? "" : "s"} found on this page`);
     for (const it of items.slice(0, 8)) {
       const b = document.createElement("button");
       b.className = "item";

@@ -93,18 +93,20 @@ Prefer no installer? `ForgeDM-portable.zip` has the same app as a single
 
 ### Connect your browser
 
-In ForgeDM open **Settings → Browser integration → Connect a browser** and
-follow the steps. In short:
+The ForgeDM extension works in Chrome, Edge, Brave and Firefox (tested end to
+end in each). It's on its way to the Chrome Web Store (which Brave uses too),
+Edge Add-ons and Firefox Add-ons; see
+[docs/browser-extension-stores.md](docs/browser-extension-stores.md). Until
+then, in ForgeDM open **Settings → Browser integration → Connect a browser**
+and follow the steps:
 
-- **Chrome, Edge, Brave, Opera, Vivaldi:** open the extensions page, turn on
-  Developer mode, click **Load unpacked** and choose the `chrome` folder that
-  ForgeDM opens for you. Then click the ForgeDM toolbar icon → **Connect**, and
-  click **Allow** in ForgeDM.
+- **Chrome, Edge, Brave:** open the extensions page (`chrome://extensions`,
+  `edge://extensions` or `brave://extensions`), turn on Developer mode, click
+  **Load unpacked** and choose the `chrome` folder that ForgeDM opens for you.
+  Then click the ForgeDM toolbar icon → **Connect**, and click **Allow** in
+  ForgeDM.
 - **Firefox:** `about:debugging` → This Firefox → Load Temporary Add-on → pick
   `manifest.json` in the `firefox` folder.
-
-Publishing the extension to the Chrome Web Store, Edge Add-ons and Firefox
-Add-ons would make this a one-click install.
 
 ## Build from source
 

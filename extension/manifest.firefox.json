@@ -1,25 +1,66 @@
 {
   "manifest_version": 3,
-  "name": "ForgeDM",
+  "name": "ForgeDM Integration",
+  "short_name": "ForgeDM",
   "version": "1.0.0",
-  "description": "Send downloads, videos and links from your browser to the ForgeDM download manager.",
-  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "description": "Sends downloads, videos and links from your browser to the ForgeDM download manager app for faster, resumable downloads.",
+  "homepage_url": "https://github.com/KartikCodes1/ForgeDM",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "action": {
     "default_title": "ForgeDM",
     "default_popup": "popup.html",
-    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png" }
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
   },
-  "background": { "scripts": ["background.js"] },
-  "permissions": ["downloads", "contextMenus", "storage", "cookies", "webRequest", "tabs"],
-  "host_permissions": ["<all_urls>"],
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "permissions": [
+    "downloads",
+    "contextMenus",
+    "storage",
+    "cookies",
+    "webRequest",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["content.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
   "browser_specific_settings": {
-    "gecko": { "id": "forgedm@forgedm.app", "strict_min_version": "115.0" }
+    "gecko": {
+      "id": "forgedm@forgedm.app",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "browsingActivity",
+          "websiteActivity",
+          "websiteContent"
+        ]
+      }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
+    }
   }
 }
