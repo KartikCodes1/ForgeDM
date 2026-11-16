@@ -69,6 +69,10 @@ Manager, plus several extras.
 
 ## Install
 
+ForgeDM is on its way to the Microsoft Store. The Store version is signed by
+Microsoft, so Windows installs it without a SmartScreen warning, and it
+updates itself. Until then:
+
 1. Download `ForgeDM-Setup-<version>.exe` from the
    [latest release](../../releases/latest), or the `ForgeDM-windows` artifact of
    the latest [build](../../actions).
@@ -116,6 +120,10 @@ also build the installer, `build/bin/ForgeDM-Setup-<version>.exe`; its script is
 `build/windows/installer/project.nsi`. You can build both from Linux or macOS
 too. Pushing a tag like `v1.0.0` makes GitHub Actions build and publish a release.
 
+The Microsoft Store package (MSIX) is built by CI, or on Windows with
+`build\windows\msix\build.ps1` (needs the Windows SDK). See
+[docs/microsoft-store.md](docs/microsoft-store.md) for publishing it.
+
 Run the tests:
 
 ```sh
@@ -144,7 +152,9 @@ cd frontend && npm install && npm run dev
 - **React + TypeScript** for the interface (`frontend/`).
 - **Browser extension** in plain JavaScript (`extension/`), Manifest V3.
 
-Your settings and download list are in `%APPDATA%\ForgeDM`.
+Your settings and download list are in `%APPDATA%\ForgeDM` (the Store
+version keeps them in its own app data folder). See the
+[privacy policy](PRIVACY.md).
 
 ## Notes
 
