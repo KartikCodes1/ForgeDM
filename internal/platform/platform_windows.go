@@ -152,8 +152,12 @@ func Scan(p string) ScanResult {
 	return ScanResult{Clean: true, Note: "Scan couldn't run", Available: false}
 }
 
-// SetStartup adds or removes ForgeDM from the user's startup apps.
+// SetStartup adds or removes ForgeDM from the user's startup apps. The Store
+// (MSIX) version uses its package startup task instead of the Run key.
 func SetStartup(enabled bool, exe string) error {
+	if Packaged() {
+		return setStartupTask(enabled)
+	}
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\CurrentVersion\Run`, registry.SET_VALUE|registry.QUERY_VALUE)
 	if err != nil {
 		return err
@@ -241,7 +245,28 @@ var (
 	meteredMu    sync.Mutex
 	meteredAt    time.Time
 	meteredValue bool
+
+	clsidNetworkListManager = windows.GUID{Data1: 0xDCB00C01, Data2: 0x570F, Data3: 0x4A9B, Data4: [8]byte{0x8D, 0x69, 0x19, 0x9F, 0xDB, 0xA5, 0x72, 0x3B}}
+	iidNetworkCostManager   = windows.GUID{Data1: 0xDCB00008, Data2: 0x570F, Data3: 0x4A9B, Data4: [8]byte{0x8D, 0x69, 0x19, 0x9F, 0xDB, 0xA5, 0x72, 0x3B}}
 )
+
+// NLM_CONNECTION_COST flags that mean the user pays for data.
+const meteredCostFlags = 0x2 | 0x4 | 0x10000 | 0x40000 // fixed, variable, over data limit, roaming
+
+// ConnectionCost returns Windows' NLM_CONNECTION_COST flags for the
+// machine's internet connection.
+func ConnectionCost() (uint32, error) {
+	var cost uint32
+	err := inMTA(func() error {
+		m, err := coCreate(&clsidNetworkListManager, &iidNetworkCostManager)
+		if err != nil {
+			return err
+		}
+		defer m.release()
+		return m.call(3, uintptr(unsafe.Pointer(&cost)), 0) // INetworkCostManager::GetCost
+	})
+	return cost, err
+}
 
 // IsMetered asks Windows whether the active connection is metered.
 func IsMetered() bool {
@@ -250,18 +275,9 @@ func IsMetered() bool {
 	if time.Since(meteredAt) < time.Minute {
 		return meteredValue
 	}
-	script := `$p=[Windows.Networking.Connectivity.NetworkInformation,Windows.Networking.Connectivity,ContentType=WindowsRuntime]::GetInternetConnectionProfile(); if($p){ $c=$p.GetConnectionCost(); Write-Output ([int]$c.NetworkCostType) } else { Write-Output 0 }`
-	cmd := exec.Command("powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script)
-	HideWindow(cmd)
-	out, err := cmd.Output()
+	cost, err := ConnectionCost()
 	meteredAt = time.Now()
-	if err != nil {
-		meteredValue = false
-		return false
-	}
-	v := strings.TrimSpace(string(out))
-	// 1 = unrestricted; 2 = fixed (data cap); 3 = variable (pay per use).
-	meteredValue = v == "2" || v == "3"
+	meteredValue = err == nil && cost&meteredCostFlags != 0
 	return meteredValue
 }
 
@@ -315,6 +331,9 @@ func DiskSpace(path string) (free, total uint64) {
 // choice the installer left under HKCU\Software\ForgeDM, then clears it so it
 // applies once; after that, ForgeDM's own setting is the source of truth.
 func TakeInstallerStartup() (on, ok bool) {
+	if Packaged() {
+		return false, false
+	}
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\ForgeDM`, registry.QUERY_VALUE|registry.SET_VALUE)
 	if err != nil {
 		return false, false

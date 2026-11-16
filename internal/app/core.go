@@ -4,6 +4,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"io/fs"
 	"net/http"
 	"os"
@@ -93,6 +94,10 @@ func NewCore(ui UI, opts Options) (*Core, error) {
 	if on, ok := platform.TakeInstallerStartup(); ok {
 		// Apply the installer's "Start ForgeDM when Windows starts" choice.
 		_, _ = store.Update(func(st *config.State) { st.Settings.StartWithSystem = on })
+	} else if on, ok := platform.StartupEnabled(); ok && on != store.Get().Settings.StartWithSystem {
+		// Store version: the user may have changed this in Task Manager or
+		// Settings > Apps > Startup. Windows is the source of truth.
+		_, _ = store.Update(func(st *config.State) { st.Settings.StartWithSystem = on })
 	}
 	exe, _ := os.Executable()
 	c := &Core{
@@ -145,7 +150,11 @@ func (c *Core) applySettings(st config.State) {
 		c.eng.SetGlobalLimit(0)
 	}
 	if c.exe != "" {
-		_ = platform.SetStartup(s.StartWithSystem, c.exe)
+		if err := platform.SetStartup(s.StartWithSystem, c.exe); errors.Is(err, platform.ErrStartupBlocked) && s.StartWithSystem {
+			_, _ = c.cfg.Update(func(st *config.State) { st.Settings.StartWithSystem = false })
+			c.toast("error", "Windows has ForgeDM's startup turned off. Turn ForgeDM on in Task Manager under Startup apps, or in Settings > Apps > Startup.")
+			c.pushState()
+		}
 	}
 	c.applyGates(st, time.Now())
 }

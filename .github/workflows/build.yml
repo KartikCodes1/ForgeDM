@@ -54,6 +54,8 @@ jobs:
             # NSIS doesn't add itself to PATH; Wails needs makensis there.
             $nsis | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
           }
+      - name: Windows integration tests
+        run: go test -v ./internal/platform/
       - name: Build ForgeDM.exe and installer
         run: wails build -platform windows/amd64 -nsis -trimpath -ldflags "-s -w" -skipbindings
       - name: Test the installer
@@ -94,6 +96,85 @@ jobs:
           if ((Get-ItemProperty $runKey -ErrorAction SilentlyContinue).ForgeDM) { throw "startup entry left behind" }
           if (-not (Test-Path "$env:APPDATA\ForgeDM\config.json")) { throw "a silent uninstall shouldn't delete settings" }
           Write-Host "Installer OK"
+      - name: Build the Store (MSIX) packages
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          powershell -NoProfile -ExecutionPolicy Bypass -File build\windows\msix\build.ps1 -Test
+          if ($LASTEXITCODE -ne 0) { throw "test package build failed" }
+          $store = Get-Content build\windows\msix\store.json -Raw | ConvertFrom-Json
+          if ($store.identityName) {
+            powershell -NoProfile -ExecutionPolicy Bypass -File build\windows\msix\build.ps1
+            if ($LASTEXITCODE -ne 0) { throw "Store package build failed" }
+          } else {
+            Write-Host "No Store identity in store.json yet: built the test package only."
+          }
+      - name: Test the Store package
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $msix = (Get-ChildItem build\bin -Filter "ForgeDM-*-test.msix" | Select-Object -First 1).FullName
+          Import-Certificate -FilePath build\bin\ForgeDM-test.cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople | Out-Null
+          Add-AppxPackage -Path $msix
+          $pkg = Get-AppxPackage -Name ForgeDM.Test
+          if (-not $pkg) { throw "the package didn't install" }
+          $pfn = $pkg.PackageFamilyName
+          $dataDir = Join-Path $env:LOCALAPPDATA "Packages\$pfn\LocalState\ForgeDM"
+          $alias = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\forgedm.exe"
+          if (-not (Test-Path $alias)) { throw "the forgedm.exe command wasn't registered" }
+          Write-Host "Installed $($pkg.PackageFullName)"
+
+          Write-Host "Windows integrations inside the package"
+          $report = Join-Path $env:RUNNER_TEMP "forgedm-diagnose.json"
+          $p = Start-Process $alias -ArgumentList "--diagnose", $report -PassThru -Wait
+          if (-not (Test-Path $report)) { throw "--diagnose wrote no report (exit code $($p.ExitCode))" }
+          Get-Content $report
+          $d = Get-Content $report -Raw | ConvertFrom-Json
+          if (-not $d.packaged) { throw "not running with package identity" }
+          if ($d.dataDir -ne $dataDir) { throw "data folder is $($d.dataDir), expected $dataDir" }
+          if (-not (Test-Path (Join-Path $dataDir "diagnose.txt"))) { throw "writes to the data folder were redirected" }
+          if ($d.connectionCostError) { throw "metered-network check failed: $($d.connectionCostError)" }
+          if ($d.startup.readError -or $d.startup.enableError) { throw "startup task failed: $($d.startup | ConvertTo-Json -Compress)" }
+          if ($d.startup.afterEnable -ne 2) { throw "turning on start-with-Windows didn't work" }
+          if ($d.startup.afterDisable -ne 0) { throw "turning off start-with-Windows didn't work" }
+          if ($d.notificationError) { Write-Warning "Notification: $($d.notificationError)" }
+
+          Write-Host "Run ForgeDM from the package"
+          $app = Start-Process $alias -ArgumentList "--minimized" -PassThru
+          $null = $app.Handle # keep the handle so ExitCode is readable later
+          Start-Sleep -Seconds 12
+          if ($app.HasExited) { throw "ForgeDM exited right after starting (code $($app.ExitCode))" }
+          if (-not (Test-Path (Join-Path $dataDir "config.json"))) { throw "settings weren't saved in the package folder" }
+          $ping = Invoke-RestMethod -UseBasicParsing -Uri "http://127.0.0.1:52771/v1/ping"
+          if ($ping.app -ne "ForgeDM") { throw "the browser connection isn't answering" }
+          Start-Process $alias -ArgumentList "--quit" -Wait
+          if (-not $app.WaitForExit(10000)) { throw "ForgeDM didn't quit" }
+          if ($app.ExitCode -ne 0) { throw "ForgeDM exited with code $($app.ExitCode)" }
+
+          Remove-AppxPackage -Package $pkg.PackageFullName
+          if (Get-AppxPackage -Name ForgeDM.Test) { throw "the package didn't uninstall" }
+          Write-Host "Store package OK"
+      - name: Windows App Certification Kit
+        shell: powershell
+        continue-on-error: true
+        timeout-minutes: 25
+        run: |
+          $appcert = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\App Certification Kit\appcert.exe"
+          if (-not (Test-Path $appcert)) { Write-Warning "The App Certification Kit isn't installed on this runner; skipping."; exit 0 }
+          $msix = (Get-ChildItem build\bin -Filter "ForgeDM-*-test.msix" | Select-Object -First 1).FullName
+          $out = Join-Path $env:RUNNER_TEMP "wack.xml"
+          & $appcert reset | Out-Null
+          & $appcert test -appxpackagepath $msix -reportoutputpath $out
+          if (-not (Test-Path $out)) { throw "no report" }
+          [xml]$r = Get-Content $out
+          Write-Host "Overall: $($r.REPORT.OVERALL_RESULT)"
+          foreach ($t in $r.SelectNodes("//TEST")) {
+            $res = $t.RESULT.'#cdata-section'
+            if (-not $res) { $res = $t.RESULT }
+            if ($res -and $res -ne "PASS") { Write-Host "$res - $($t.NAME): $($t.DESCRIPTION)"; $t.MESSAGES.MESSAGE | ForEach-Object { Write-Host "    $($_.TEXT)" } }
+          }
+          Copy-Item $out build\bin\wack-report.xml
+          if ($r.REPORT.OVERALL_RESULT -eq "FAIL") { throw "certification tests failed" }
       - name: Package
         shell: pwsh
         run: |
@@ -108,6 +189,15 @@ jobs:
         with:
           name: ForgeDM-windows
           path: release/*
+      - name: Upload the Store package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ForgeDM-store
+          if-no-files-found: ignore
+          path: |
+            build/bin/ForgeDM-*.msix
+            build/bin/wack-report.xml
+            !build/bin/ForgeDM-*-test.msix
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2

@@ -1,0 +1,6 @@
+{
+  "_comment": "Copy these three values from Partner Center > ForgeDM > Product management > Product identity. Until they're filled in, builds use a test identity that can be sideloaded but not uploaded to the Store.",
+  "identityName": "",
+  "publisher": "",
+  "publisherDisplayName": ""
+}

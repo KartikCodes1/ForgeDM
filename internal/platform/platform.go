@@ -6,6 +6,7 @@
 package platform
 
 import (
+	"errors"
 	"net/http"
 	"net/url"
 	"os"
@@ -33,7 +34,14 @@ func DefaultDownloadsDir() string {
 }
 
 // DataDir is where ForgeDM keeps its settings and download list.
+// ErrStartupBlocked means Windows won't let ForgeDM start at sign-in because
+// the user (in Task Manager or Settings) or a policy turned it off.
+var ErrStartupBlocked = errors.New("starting with Windows is turned off in Windows settings")
+
 func DataDir() string {
+	if d := packagedDataDir(); d != "" {
+		return d
+	}
 	base, err := os.UserConfigDir()
 	if err != nil || base == "" {
 		base = "."

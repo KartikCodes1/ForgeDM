@@ -38,6 +38,15 @@ func hasArg(name string) bool {
 	return false
 }
 
+func argIndex(name string) int {
+	for i, a := range os.Args {
+		if i > 0 && strings.EqualFold(a, name) {
+			return i
+		}
+	}
+	return -1
+}
+
 func linkArg(args []string) string {
 	for _, a := range args {
 		if strings.HasPrefix(a, "http://") || strings.HasPrefix(a, "https://") {
@@ -52,6 +61,10 @@ func main() {
 		runWidget()
 		return
 	}
+	if i := argIndex("--diagnose"); i > 0 && i+1 < len(os.Args) {
+		runDiagnose(os.Args[i+1])
+		return
+	}
 	if hasArg("--quit") {
 		// Used by the installer and uninstaller to close ForgeDM cleanly.
 		if app.QuitRunning() != nil {
@@ -59,7 +72,9 @@ func main() {
 		}
 		return
 	}
-	minimized := hasArg("--minimized")
+	// Started hidden by the Run key (installer version) or the startup task
+	// (Store version) at sign-in.
+	minimized := hasArg("--minimized") || platform.LaunchedAtStartup()
 	ui := &wailsUI{}
 	extFS, _ := fs.Sub(extensionFiles, "extension/dist")
 	core, err := app.NewCore(ui, app.Options{StartHidden: minimized, ExtensionFS: extFS})
@@ -83,6 +98,7 @@ func main() {
 		OnStartup: func(ctx context.Context) {
 			ui.setContext(ctx)
 			_ = runtime.InitializeNotifications(ctx)
+			usePackageNotifications()
 			core.Startup(ctx)
 			startTray(core, bridge, ui)
 			if startLink != "" {

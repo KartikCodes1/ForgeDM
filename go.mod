@@ -3,6 +3,7 @@ module github.com/KartikCodes1/forgedm
 go 1.26.0
 
 require (
+	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3
 	github.com/bodgit/sevenzip v1.6.5
 	github.com/energye/systray v1.0.3
 	github.com/nwaples/rardecode/v2 v2.4.6
@@ -13,7 +14,6 @@ require (
 )
 
 require (
-	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3 // indirect
 	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/bodgit/plumbing v1.3.0 // indirect

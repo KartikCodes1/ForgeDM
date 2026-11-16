@@ -80,3 +80,25 @@ func DiskSpace(path string) (free, total uint64) {
 // TakeInstallerStartup returns the installer's start-with-the-system choice
 // (Windows only).
 func TakeInstallerStartup() (on, ok bool) { return false, false }
+
+// Packaged reports whether ForgeDM runs as an MSIX package (Windows only).
+func Packaged() bool { return false }
+
+// PackageAppID returns the app's AppUserModelID when packaged (Windows only).
+func PackageAppID() string { return "" }
+
+func packagedDataDir() string { return "" }
+
+// StartupEnabled reports the packaged app's startup task state (Windows only).
+func StartupEnabled() (enabled, ok bool) { return false, false }
+
+// LaunchedAtStartup reports whether Windows started the packaged app at
+// sign-in (Windows only).
+func LaunchedAtStartup() bool { return false }
+
+// StartupDiagnostics exercises the startup task (Windows only).
+func StartupDiagnostics() map[string]any { return map[string]any{"supported": false} }
+
+// ConnectionCost returns Windows' cost flags for the internet connection
+// (Windows only).
+func ConnectionCost() (uint32, error) { return 0, nil }
