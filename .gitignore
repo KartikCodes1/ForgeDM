@@ -1,0 +1,27 @@
+# Build output
+/build/bin/
+/dist/
+/extension/dist/
+frontend/dist/
+frontend/node_modules/
+node_modules/
+
+# Wails generated
+frontend/wailsjs/
+frontend/package.json.md5
+
+# Go
+*.exe
+*.test
+*.out
+/forgedm
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Runtime data written during development
+*.forgedm
+*.forgedm.parts/
