@@ -90,7 +90,7 @@ export function Dashboard() {
             <span style={{ flex: Math.max(1, 8 - activeList.length), height: 34, borderRadius: 4, border: "1px dashed var(--border2)" }} />
           </div>
         </StatTile>
-        <StatTile label="Downloaded today" icon="folder" color="var(--blue)" value={tNum} unit={`${tUnit} · ${today?.files ?? 0} files`}>
+        <StatTile label="Downloaded today" icon="folder" color="var(--blue)" value={tNum} unit={`${tUnit} · ${today?.files ?? 0} file${today?.files === 1 ? "" : "s"}`}>
           <span className="muted" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
             <span className="chip accent" style={{ fontWeight: 600 }}>{diff >= 0 ? "+" : "−"}{fmtBytes(Math.abs(diff))}</span>
             compared with yesterday
@@ -110,7 +110,7 @@ export function Dashboard() {
             </div>
             <Seg label="Time range" value={range} onChange={setRange} options={RANGES} />
           </div>
-          <AreaChart values={series} label={`Download speed, ${RANGES.find((r) => r.value === range)?.sub.toLowerCase()}`} current={range === "1m" ? speed : undefined} />
+          <AreaChart values={series} length={range === "24h" ? 96 : 60} label={`Download speed, ${RANGES.find((r) => r.value === range)?.sub.toLowerCase()}`} current={range === "1m" ? speed : undefined} />
           <div className="muted" style={{ display: "flex", flexWrap: "wrap", gap: 24, paddingLeft: 44, fontSize: 13 }}>
             <span>Peak <strong style={{ color: "var(--text)", fontWeight: 600 }}>{fmtSpeed(peak)}</strong></span>
             <span>Average <strong style={{ color: "var(--text)", fontWeight: 600 }}>{fmtSpeed(avg)}</strong></span>
@@ -121,7 +121,7 @@ export function Dashboard() {
         <section className="card stack" style={{ flex: "1 1 300px", gap: 16 }} aria-labelledby="bw-h">
           <div>
             <h2 id="bw-h">Bandwidth split</h2>
-            <p className="sub">Share of the current {fmtSpeed(speed)}</p>
+            <p className="sub">{speed > 0 ? `Share of the current ${fmtSpeed(speed)}` : "How the speed is shared between downloads"}</p>
           </div>
           {activeList.length > 0 ? (
             <>
@@ -204,7 +204,7 @@ export function Dashboard() {
             <p className="sub">Space used by category</p>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 20 }}>
-            <Donut slices={libSlices} center={fmtBytes(libTotal, 2).replace(/\.0+ /, " ")} sub={`${libFiles} files`} label={`Library by category: ${libSlices.map((s) => `${s.label} ${fmtBytes(s.value)}`).join(", ")}`} />
+            <Donut slices={libSlices} center={fmtBytes(libTotal, 2).replace(/\.0+ /, " ")} sub={`${libFiles} file${libFiles === 1 ? "" : "s"}`} label={`Library by category: ${libSlices.map((s) => `${s.label} ${fmtBytes(s.value)}`).join(", ")}`} />
             <div className="stack grow" style={{ flex: "1 1 140px", gap: 8 }}>
               {libSlices.map((s) => (
                 <button key={s.label} className="side-link" style={{ height: 26, padding: "0 4px", fontSize: 13 }} onClick={() => go("downloads", { category: s.label })}>

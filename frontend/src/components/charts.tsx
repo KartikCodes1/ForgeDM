@@ -6,7 +6,8 @@ const MB = 1 << 20;
 /** Rounds a speed up to a tidy axis maximum. */
 export function niceMax(v: number): number {
   const mb = Math.max(v / MB, 1);
-  const steps = [1, 2, 5, 10, 20, 30, 40, 50, 60, 80, 100, 150, 200, 300, 500, 1000, 2000, 5000];
+  // Multiples of 3 so the three grid lines land on round numbers.
+  const steps = [0.3, 0.6, 1.5, 3, 6, 9, 15, 30, 45, 60, 90, 120, 150, 300, 600, 900, 1500, 3000, 6000];
   for (const s of steps) if (mb <= s * 0.92) return s * MB;
   return Math.ceil(mb / 1000) * 1000 * MB;
 }
@@ -23,9 +24,11 @@ function toPath(values: number[], w: number, h: number, max: number): string {
     .join(" ");
 }
 
-export function AreaChart({ values, height = 200, label, showAxis = true, color = "var(--accent)", current }: { values: number[]; height?: number; label: string; showAxis?: boolean; color?: string; current?: number }) {
+export function AreaChart({ values, height = 200, label, showAxis = true, color = "var(--accent)", current, length }: { values: number[]; height?: number; label: string; showAxis?: boolean; color?: string; current?: number; length?: number }) {
   const id = useId().replace(/:/g, "");
-  const data = values.length > 1 ? values : [0, ...(values.length ? values : [0])];
+  // Pad on the left so the time axis keeps its full width while data builds up.
+  const padded = length && values.length < length ? [...Array(length - values.length).fill(0), ...values] : values;
+  const data = padded.length > 1 ? padded : [0, ...(padded.length ? padded : [0])];
   const max = niceMax(Math.max(...data, 1));
   const W = 600;
   const line = toPath(data, W, height, max);
@@ -39,7 +42,7 @@ export function AreaChart({ values, height = 200, label, showAxis = true, color 
         <div aria-hidden="true" className="mono faint" style={{ position: "relative", width: 34, height, fontSize: 11 }}>
           {ticks.map((t) => (
             <span key={t} style={{ position: "absolute", right: 0, top: Math.max(0, (1 - t) * height - 7) }}>
-              {Math.round((max * t) / MB)}
+              {fmtAxis((max * t) / MB)}
             </span>
           ))}
         </div>
@@ -182,4 +185,10 @@ export function WeekBars({ days, max }: { days: { label: string; value: number; 
       </div>
     </>
   );
+}
+
+function fmtAxis(mb: number): string {
+  if (mb === 0) return "0";
+  if (mb < 1) return mb.toFixed(1);
+  return String(Math.round(mb));
 }

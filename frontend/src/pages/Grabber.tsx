@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api, on } from "../api";
 import { Switch } from "../components/ui";
 import { fmtBytes, fmtWhen } from "../format";
@@ -31,10 +31,12 @@ export function Grabber() {
   const [sync, setSync] = useState(false);
   const [syncDay, setSyncDay] = useState(0);
   const [syncTime, setSyncTime] = useState("09:00");
+  const finished = useRef(new Set<string>());
 
   useEffect(() => {
     const a = on<{ id: string; progress: GrabProgress }>("grabber", (e) => setProgress(e.progress));
     const b = on<{ id: string; items: GrabItem[]; error: string; seconds: number }>("grabber:done", (e) => {
+      finished.current.add(e.id);
       setScanId(null);
       setItems(e.items ?? []);
       setError(e.error);
@@ -75,7 +77,8 @@ export function Grabber() {
     setError("");
     setProgress({ pages: 0, found: 0, sized: 0, stage: "pages", current: url });
     const id = await act(api.startScan({ url: url.trim(), depth, sameSite }));
-    if (id) setScanId(id);
+    // A quick scan can finish before startScan returns.
+    if (id && !finished.current.has(id)) setScanId(id);
   };
 
   const loadProject = (p: Project) => {

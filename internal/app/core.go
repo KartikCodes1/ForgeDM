@@ -308,9 +308,23 @@ func (c *Core) snapshot() Snapshot {
 	if s.Downloads == nil {
 		s.Downloads = []engine.Download{}
 	}
+	if s.Rules == nil {
+		s.Rules = []config.Rule{}
+	}
+	if s.Projects == nil {
+		s.Projects = []config.Project{}
+	}
+	if s.Settings.Tags == nil {
+		s.Settings.Tags = []string{}
+	}
+	if s.Settings.CaptureExts == nil {
+		s.Settings.CaptureExts = []string{}
+	}
+	s.Browsers = []BrowserView{}
 	for _, b := range st.Settings.Browsers {
 		s.Browsers = append(s.Browsers, BrowserView{ID: b.ID, Name: b.Name, PairedAt: b.PairedAt, LastSeen: b.LastSeen})
 	}
+
 	s.Settings.Browsers = nil
 	s.Settings.InternalToken = ""
 	if c.api != nil {
@@ -356,6 +370,12 @@ func (c *Core) snapshot() Snapshot {
 			qv.Active = q.Enabled
 		} else {
 			qv.NextRun = nextStart(q, now)
+		}
+		if qv.Days == nil {
+			qv.Days = []int{}
+		}
+		if qv.Order == nil {
+			qv.Order = []string{}
 		}
 		s.Queues = append(s.Queues, *qv)
 	}
